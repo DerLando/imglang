@@ -69,14 +69,17 @@ An approach towards this goal, that I want to test in this repo is as follows:
   let circleStroke = stroke BLACK t * 2
   let spikeStroke = stroke DARKGRAY t
 
-  // TODO: How to pass in the canvas purely? inside the draw function?
-  // but then draw HAS TO return a new instance of canvas back, which
-  // makes piping geometry more awkward
-
-  // do the actual logic
-  circleOriginRadius r
-  |> draw circleStroke // the draw function returns the geometry passed in, so we can keep on piping
+  // define the wheel curve
+  let wheel = circleOriginRadius r
+  // define the spiked
+  wheel
   |> samplePointsUniform n
   |> lineTo ORIGIN
+
+  // draw the geometry to the canvas
+  canvas
+  |> draw circleStroke // the draw function returns the updated canvas, so we can keep on piping
   |> draw spikeStroke // draw should be able to take lists of data, too
+
+  out canvas // not sure on the syntax here yet
   ```
