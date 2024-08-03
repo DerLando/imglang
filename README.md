@@ -66,20 +66,21 @@ An approach towards this goal, that I want to test in this repo is as follows:
   let canvas = canvas 400 300 // good old 4:3 aspect ratio
   
   // define strokes for wheel and spikes
-  let circleStroke = stroke BLACK t * 2
+  let wheelStroke = stroke BLACK t * 2
   let spikeStroke = stroke DARKGRAY t
 
   // define the wheel curve
   let wheel = circleOriginRadius r
   // define the spiked
-  wheel
-  |> samplePointsUniform n
-  |> lineTo ORIGIN
+  let spikes =
+      wheel
+      |> samplePointsUniform n
+      |> lineTo ORIGIN
 
   // draw the geometry to the canvas
   canvas
-  |> draw circleStroke // the draw function returns the updated canvas, so we can keep on piping
-  |> draw spikeStroke // draw should be able to take lists of data, too
+  |> draw wheel wheelStroke // the draw function returns the updated canvas, so we can keep on piping
+  |> draw spikes spikeStroke // draw should be able to take lists of data, too
 
   out canvas // not sure on the syntax here yet
   ```
