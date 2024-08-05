@@ -58,9 +58,10 @@ An approach towards this goal, that I want to test in this repo is as follows:
 
   ```fsharp
   // define the script inputs
-  let r = externInt 10 15 // integer between 10 and 15 inclusive
-  let n = externInt 3 7
-  let t = externFloat 0.2 1.0
+  // do note the extern keyword
+  let extern r = externInt 10 15 // integer between 10 and 15 inclusive
+  let extern n = externInt 3 7
+  let extern t = externFloat 0.2 1.0
 
   // define the canvas
   let canvas = canvas 400 300 // good old 4:3 aspect ratio
@@ -81,6 +82,19 @@ An approach towards this goal, that I want to test in this repo is as follows:
   canvas
   |> draw wheel wheelStroke // the draw function returns the updated canvas, so we can keep on piping
   |> draw spikes spikeStroke // draw should be able to take lists of data, too
-
-  out canvas // not sure on the syntax here yet
+  |> out
   ```
+
+I want Scripts to Compose nicely so some language Features will be needed:
+
+- [ ] extern Inputs
+- [ ] primitive constants
+- [ ] dedicated Outputs
+- [ ] functions
+- [ ] partial Applikation
+- [ ] tagged Unions
+- [ ] Pattern matching
+
+although simplicity will Always be the Main Driver when deciding ON adding Features. additionally, some thought should Go early into how we could allow for anymations to be generated, too. I feel some elm-like mvu Pattern would map nicely ON the Code Side,  but mapping the result to an animated vector Format (Like *SVG*) could be potentially awkward.
+
+For a quick and nice Parser Im learning towards Just using winnow for now.
