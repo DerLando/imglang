@@ -91,10 +91,21 @@ I want Scripts to Compose nicely so some language Features will be needed:
 - [ ] primitive constants
 - [ ] dedicated Outputs
 - [ ] functions
-- [ ] partial Applikation
+- [ ] partial application
 - [ ] tagged Unions
 - [ ] Pattern matching
 
-although simplicity will Always be the Main Driver when deciding ON adding Features. additionally, some thought should Go early into how we could allow for anymations to be generated, too. I feel some elm-like mvu Pattern would map nicely ON the Code Side,  but mapping the result to an animated vector Format (Like *SVG*) could be potentially awkward.
+although simplicity will Always be the Main Driver when deciding on adding Features. additionally, some thought should go early into how we could allow for animations to be generated, too. I feel some elm-like `MVU` Pattern would map nicely on the Code Side,  but mapping the result to an animated vector Format (Like *SVG*) could be potentially awkward.
 
-For a quick and nice Parser Im learning towards Just using winnow for now.
+For a quick and nice Parser Im learning towards Just using winnow for now. A glance over the documentation looks quite nice. For inspiration I can probably look at `gleam`, as the syntax is quite similar for what I'm aiming for (though I don't want to do curly braces, if i can avoid them). I think a big strength of python is that it sometimes allows you to **just write** without thinking about syntax or semantics. That's where I'd like imglang to be. Whitespace has the tendency to get annoying and to produce very hard to debug errors, so I'm not fully sold on it yet... 
+
+The `ast` will be hopefully quite simple to construct, though I'm quite hesitant with some of the listed language features, as they will make for some complex structs in the end. I'll follow the advice of `matklad` and prioritize getting something, or rather *anything* working first and following up by expanding the features later.
+
+### MVP
+
+To really condense it down, the MVP needs to to only do a few things at first:
+
+- [ ] Some scripting language with a tiny stdlib allowing for very basic geometric scripting
+  - The language should be reduced to what is seen in the sample script, so only function calling of stdlib functions, as well as defining variables
+- [ ] A basic compiler that can generate some image format from the script. Whatever is easiest to implement. In the future I'll want `piet` as a kind of *intermediate representation*, as this unlocks quite a few image formats out of the box, as well as vectors, which for me is the most important format.
+- [ ] *optional*: "ide" for the language, where inputs of the script are parsed and automatically rendered as a UI, allowing to re-execute the compiler cli with the values from the UI set and displaying the rendered image. Would be best if it could compile to web, so the experience of using it is easy to set up and requires no big downloads, but I'm open to any UI framework, as the first prototype will be super simple anyways and since it's optional, *speed of implementation* will be the deciding factor.
