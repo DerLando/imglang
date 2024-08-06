@@ -81,7 +81,7 @@ An approach towards this goal, that I want to test in this repo is as follows:
   // draw the geometry to the canvas
   canvas
   |> draw wheel wheelStroke // the draw function returns the updated canvas, so we can keep on piping
-  |> draw spikes spikeStroke // draw should be able to take lists of data, too
+  |> drawMany spikes spikeStroke 
   |> out
   ```
 
@@ -109,3 +109,24 @@ To really condense it down, the MVP needs to to only do a few things at first:
   - The language should be reduced to what is seen in the sample script, so only function calling of stdlib functions, as well as defining variables
 - [ ] A basic compiler that can generate some image format from the script. Whatever is easiest to implement. In the future I'll want `piet` as a kind of *intermediate representation*, as this unlocks quite a few image formats out of the box, as well as vectors, which for me is the most important format.
 - [ ] *optional*: "ide" for the language, where inputs of the script are parsed and automatically rendered as a UI, allowing to re-execute the compiler cli with the values from the UI set and displaying the rendered image. Would be best if it could compile to web, so the experience of using it is easy to set up and requires no big downloads, but I'm open to any UI framework, as the first prototype will be super simple anyways and since it's optional, *speed of implementation* will be the deciding factor.
+
+I'll also go with the most basic script first, that needs to compile
+
+```fsharp
+  // radius input of circle to draw
+  let extern r = externInt 10 15 // integer between 10 and 15 inclusive
+
+  // define the canvas
+  let canvas = canvas 400 300 // good old 4:3 aspect ratio
+  
+  // define strokes for curve
+  let circleStroke = stroke BLACK r / 10.0
+
+  // define the curve to draw
+  let circle = circleOriginRadius r
+
+  canvas
+  |> draw circle circleStroke
+  |> out
+```
+
