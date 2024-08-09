@@ -1,4 +1,9 @@
-use winnow::{ascii::alphanumeric1, token::one_of, PResult, Parser};
+use winnow::{
+    ascii::alphanumeric1,
+    error::{ContextError, ErrMode, ParserError},
+    token::one_of,
+    PResult, Parser,
+};
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum Token {
@@ -12,9 +17,14 @@ pub(crate) enum Token {
     Ident(String),
     /// |>
     Pipe,
+    /// A literal value
     Literal(Literal),
+    /// 4 spaces
+    Indent,
+    Comment,
 }
 
+/// A literal value
 #[derive(Debug, PartialEq)]
 pub(crate) enum Literal {
     String(String),
@@ -23,24 +33,27 @@ pub(crate) enum Literal {
     Bool(bool),
 }
 
-pub(crate) fn extern_keyword<'a>(input: &mut &'a str) -> PResult<Token> {
+pub(crate) fn extern_keyword(input: &mut &str) -> PResult<Token> {
     let actual = "extern".parse_next(input)?;
     Ok(Token::Extern)
 }
 
-pub(crate) fn let_keyword<'a>(input: &mut &'a str) -> PResult<Token> {
+pub(crate) fn let_keyword(input: &mut &str) -> PResult<Token> {
     let actual = "let".parse_next(input)?;
     Ok(Token::Let)
 }
 
-pub(crate) fn ident<'a>(input: &'a mut &'a str) -> PResult<Token> {
+pub(crate) fn assign(input: &mut &str) -> PResult<Token> {
+    '='.parse_next(input).map(|_| Token::Assign)
+}
+
+pub(crate) fn ident(input: &mut &str) -> PResult<Token> {
     alphanumeric1(input).map(|name| Token::Ident(name.to_string()))
 }
 
-pub(crate) fn comment<'a>(input: &mut &'a str) -> PResult<()> {
+pub(crate) fn comment(input: &mut &str) -> PResult<Token> {
     let comment_start = "//".parse_next(input)?;
-    // TODO: Discard everything until newline of the input
-    Ok(())
+    winnow::ascii::till_line_ending(input).map(|_| Token::Comment)
 }
 
 pub(crate) fn string_literal(input: &mut &str) -> PResult<Token> {
@@ -61,7 +74,12 @@ pub(crate) fn bool_literal(input: &mut &str) -> PResult<Token> {
 }
 
 pub(crate) fn int_literal(input: &mut &str) -> PResult<Token> {
-    winnow::ascii::dec_int(input).map(|num| Token::Literal(Literal::Int(num)))
+    let n = winnow::ascii::dec_int(input)?;
+
+    match input.chars().next() {
+        Some('.') | Some('e') | Some('E') => Err(ErrMode::Backtrack(ContextError::new())),
+        _ => Ok(Token::Literal(Literal::Int(n))),
+    }
 }
 
 pub(crate) fn float_literal(input: &mut &str) -> PResult<Token> {
@@ -73,22 +91,100 @@ pub(crate) fn literal(input: &mut &str) -> PResult<Token> {
         .parse_next(input)
 }
 
+pub(crate) fn indent(input: &mut &str) -> PResult<Token> {
+    "    ".parse_next(input).map(|_| Token::Indent)
+}
+
+pub(crate) fn pipe(input: &mut &str) -> PResult<Token> {
+    "|>".parse_next(input).map(|_| Token::Pipe)
+}
+
+/// A combinator that takes a parser `inner` and produces a parser that also consumes both leading and
+/// trailing whitespace, returning the output of `inner`.
+fn ws0<'a, F, O, E: ParserError<&'a str>>(inner: F) -> impl Parser<&'a str, O, E>
+where
+    F: Parser<&'a str, O, E>,
+{
+    winnow::combinator::terminated(inner, winnow::ascii::multispace0)
+}
+
+fn ws1<'a, F, O, E: ParserError<&'a str>>(inner: F) -> impl Parser<&'a str, O, E>
+where
+    F: Parser<&'a str, O, E>,
+{
+    winnow::combinator::terminated(inner, winnow::ascii::multispace1)
+}
+
+#[derive(Debug)]
+pub(crate) struct Program {
+    tokens: Vec<Token>,
+}
+pub(crate) fn full_program(input: &mut &str) -> PResult<Program> {
+    // a line always starts with an indent, a let binding, or pipe (I think)
+    let mut tokens = Vec::new();
+
+    while let Ok(token) = ws0(winnow::combinator::alt((
+        comment,
+        indent,
+        ws1(let_keyword),
+        ws1(extern_keyword),
+        ws1(pipe),
+        ws0(literal),
+        assign,
+        ws0(ident),
+    )))
+    .parse_next(input)
+    {
+        tokens.push(token);
+    }
+
+    Ok(Program { tokens })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_literals() {
+    fn test_valid_literals() {
         let mut raw = r#""Hello""#;
         assert_eq!(
             Token::Literal(Literal::String("Hello".to_string())),
             literal(&mut raw).unwrap()
-        )
+        );
+
+        let mut raw = "0.1234";
+        assert_eq!(
+            Token::Literal(Literal::Float(0.1234)),
+            literal(&mut raw).unwrap()
+        );
+
+        let mut raw = "-12";
+        assert_eq!(
+            Token::Literal(Literal::Int(-12)),
+            literal(&mut raw).unwrap()
+        );
+
+        let mut raw = "true";
+        assert_eq!(
+            Token::Literal(Literal::Bool(true)),
+            literal(&mut raw).unwrap()
+        );
     }
 
     #[test]
     fn test_input_declaration() {
-        let raw = "let extern r = externInt 10 15";
+        let mut raw = "let extern r = externInt 10 15";
         // TODO: parse the string somehow?
+        let program = full_program(&mut raw).unwrap();
+
+        assert_eq!(7, program.tokens.len());
+        assert_eq!(Token::Let, program.tokens[0]);
+        assert_eq!(Token::Extern, program.tokens[1]);
+        assert_eq!(Token::Ident("r".to_string()), program.tokens[2]);
+        assert_eq!(Token::Assign, program.tokens[3]);
+        assert_eq!(Token::Ident("externInt".to_string()), program.tokens[4]);
+        assert_eq!(Token::Literal(Literal::Int(10)), program.tokens[5]);
+        assert_eq!(Token::Literal(Literal::Int(15)), program.tokens[6]);
     }
 }
