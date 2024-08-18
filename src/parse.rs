@@ -115,6 +115,18 @@ where
     winnow::combinator::terminated(inner, winnow::ascii::multispace1)
 }
 
+fn strip_start(input: &mut &str) -> PResult<()> {
+    fn stripper<'a>(input: &mut &'a str) -> PResult<&'a str> {
+        winnow::combinator::alt((winnow::ascii::line_ending, winnow::ascii::multispace1))
+            .parse_next(input)
+    }
+    while let Ok(_res) = stripper(input) {
+        // continue
+    }
+
+    Ok(())
+}
+
 #[derive(Debug)]
 pub(crate) struct Program {
     tokens: Vec<Token>,
@@ -122,6 +134,8 @@ pub(crate) struct Program {
 pub(crate) fn full_program(input: &mut &str) -> PResult<Program> {
     // a line always starts with an indent, a let binding, or pipe (I think)
     let mut tokens = Vec::new();
+
+    strip_start(input);
 
     while let Ok(token) = ws0(winnow::combinator::alt((
         comment,
@@ -186,5 +200,48 @@ mod tests {
         assert_eq!(Token::Ident("externInt".to_string()), program.tokens[4]);
         assert_eq!(Token::Literal(Literal::Int(10)), program.tokens[5]);
         assert_eq!(Token::Literal(Literal::Int(15)), program.tokens[6]);
+    }
+
+    #[test]
+    fn test_declaration() {
+        let mut raw = "let canvas = canvasWidthHeight 300 400";
+        // TODO: parse the string somehow?
+        let program = full_program(&mut raw).unwrap();
+        let mut tokens = program.tokens.into_iter();
+
+        assert_eq!(6, tokens.len());
+        assert_eq!(Token::Let, tokens.next().unwrap());
+        assert_eq!(Token::Ident("canvas".to_string()), tokens.next().unwrap());
+        assert_eq!(Token::Assign, tokens.next().unwrap());
+        assert_eq!(
+            Token::Ident("canvasWidthHeight".to_string()),
+            tokens.next().unwrap()
+        );
+        assert_eq!(Token::Literal(Literal::Int(300)), tokens.next().unwrap());
+        assert_eq!(Token::Literal(Literal::Int(400)), tokens.next().unwrap());
+    }
+
+    #[test]
+    fn test_pipe() {
+        let mut raw = r#"
+  canvas
+  |> draw circle circleStroke
+  |> out
+        "#;
+        // TODO: parse the string somehow?
+        let program = full_program(&mut raw).unwrap();
+        let mut tokens = program.tokens.into_iter();
+
+        assert_eq!(7, tokens.len());
+        assert_eq!(Token::Ident("canvas".to_string()), tokens.next().unwrap());
+        assert_eq!(Token::Pipe, tokens.next().unwrap());
+        assert_eq!(Token::Ident("draw".to_string()), tokens.next().unwrap());
+        assert_eq!(Token::Ident("circle".to_string()), tokens.next().unwrap());
+        assert_eq!(
+            Token::Ident("circleStroke".to_string()),
+            tokens.next().unwrap()
+        );
+        assert_eq!(Token::Pipe, tokens.next().unwrap());
+        assert_eq!(Token::Ident("out".to_string()), tokens.next().unwrap());
     }
 }
