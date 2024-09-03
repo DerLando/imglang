@@ -129,7 +129,7 @@ fn strip_start(input: &mut &str) -> PResult<()> {
 
 #[derive(Debug)]
 pub(crate) struct Program {
-    tokens: Vec<Token>,
+    pub(crate) tokens: Vec<Token>,
 }
 pub(crate) fn full_program(input: &mut &str) -> PResult<Program> {
     // a line always starts with an indent, a let binding, or pipe (I think)

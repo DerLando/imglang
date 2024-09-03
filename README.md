@@ -117,7 +117,7 @@ I'll also go with the most basic script first, that needs to compile
   let extern r = externInt 10 15 // integer between 10 and 15 inclusive
 
   // define the canvas
-  let canvas = canvasWidtHeight 400 300 // good old 4:3 aspect ratio
+  let canvas = canvasWidthHeight 400 300 // good old 4:3 aspect ratio
   
   // define strokes for curve
   let circleStroke = stroke BLACK r / 10.0
