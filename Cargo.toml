@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 piet = "0.6.2"
 piet-svg = "0.6.2"
+rhai = "1.19.0"
 winnow = "0.6.18"
