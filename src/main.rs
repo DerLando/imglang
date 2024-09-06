@@ -17,15 +17,15 @@ fn main() -> Result<(), anyhow::Error> {
 
     println!("{:?}", engine.eval::<rhai_plugin::Shape>("circle(50.0)"));
 
-    let script = r#"
-    let canvas = canvas_width_height(400, 300);
-    let stroke = stroke(2.0, BLACK);
-    let circle = circle(50.0);
+    let script = std::fs::read_to_string("test_script.rhai")?;
 
-    canvas.draw(circle, stroke);
+    // TODO: Rather spawn a thread to watch the file location for changes and re-run the script/drawing
 
-    canvas
-"#;
+    // TODO: Implement the external inputs and store them in the context
+
+    // TODO: Use the context to somehow create a web UI with sliders for inputs
+
+    // TODO: Probably need to wrap all of that into a simple server that serves a text editor together with a canvas + sliders
 
     let context;
     match engine.eval::<rhai_plugin::Context>(&script) {
