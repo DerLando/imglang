@@ -2,9 +2,9 @@ use rhai::plugin::*;
 
 #[derive(Clone, Debug)]
 pub struct Context {
-    canvas_width: i64,
-    canvas_height: i64,
-    shapes: Vec<(Shape, Stroke)>,
+    pub(crate) canvas_width: i64,
+    pub(crate) canvas_height: i64,
+    pub(crate) shapes: Vec<(Shape, Stroke)>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -16,8 +16,8 @@ pub enum Color {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Stroke {
-    width: f64,
-    color: Color,
+    pub(crate) width: f64,
+    pub(crate) color: Color,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -27,7 +27,7 @@ pub enum Shape {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Circle {
-    radius: f64,
+    pub(crate) radius: f64,
 }
 
 #[export_module]
