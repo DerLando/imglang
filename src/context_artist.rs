@@ -3,16 +3,22 @@ use piet::{kurbo, RenderContext};
 
 pub fn into_piet(shape: rhai_plugin::Shape) -> impl kurbo::Shape {
     match shape {
-        rhai_plugin::Shape::Circle(circle) => kurbo::Circle::new((0.0, 0.0), circle.radius),
+        rhai_plugin::Shape::Circle {
+            geometry,
+            transform,
+        } => {
+            let circle = kurbo::Circle::new((0.0, 0.0), geometry.radius);
+            transform.inner * circle
+        }
     }
 }
 
-impl From<rhai_plugin::Color> for piet::Color {
-    fn from(value: rhai_plugin::Color) -> Self {
+impl From<crate::color::Color> for piet::Color {
+    fn from(value: crate::color::Color) -> Self {
         match value {
-            rhai_plugin::Color::BLACK => piet::Color::BLACK,
-            rhai_plugin::Color::WHITE => piet::Color::WHITE,
-            rhai_plugin::Color::RED => piet::Color::RED,
+            crate::color::Color::BLACK => piet::Color::BLACK,
+            crate::color::Color::WHITE => piet::Color::WHITE,
+            crate::color::Color::RED => piet::Color::RED,
         }
     }
 }

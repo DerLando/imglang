@@ -4,7 +4,9 @@ use rhai::{exported_module, Engine};
 use crate::context_artist::draw_context;
 
 mod ast;
+mod color;
 mod context_artist;
+mod input;
 mod interpret;
 mod parse;
 mod rhai_plugin;
