@@ -23,7 +23,7 @@ impl From<crate::color::Color> for piet::Color {
     }
 }
 
-pub fn draw_context(context: rhai_plugin::Context) -> piet_svg::RenderContext {
+pub(crate) fn draw_context(context: rhai_plugin::Context) -> ContextImageWriter {
     let mut canvas = piet_svg::RenderContext::new(kurbo::Size {
         width: context.canvas_width as f64,
         height: context.canvas_height as f64,
@@ -39,5 +39,19 @@ pub fn draw_context(context: rhai_plugin::Context) -> piet_svg::RenderContext {
         )
     }
 
-    canvas
+    ContextImageWriter { rc: canvas }
+}
+
+pub trait ImageWriter {
+    fn write(&self, writer: impl std::io::Write) -> std::io::Result<()>;
+}
+
+pub(crate) struct ContextImageWriter {
+    rc: piet_svg::RenderContext,
+}
+
+impl ImageWriter for ContextImageWriter {
+    fn write(&self, writer: impl std::io::Write) -> std::io::Result<()> {
+        self.rc.write(writer)
+    }
 }

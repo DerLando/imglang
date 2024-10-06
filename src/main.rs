@@ -1,5 +1,10 @@
+use std::collections::HashMap;
+
 use anyhow::Error;
+use context_artist::ImageWriter;
+use input::InputValue;
 use rhai::{exported_module, Engine};
+use solver::Solver;
 
 use crate::context_artist::draw_context;
 
@@ -10,15 +15,9 @@ mod input;
 mod interpret;
 mod parse;
 mod rhai_plugin;
+mod solver;
 mod stdlib;
 fn main() -> Result<(), anyhow::Error> {
-    println!("Hello, world!");
-    let mut engine = Engine::new();
-    let std_module = exported_module!(rhai_plugin::imgstd);
-    engine.register_global_module(std_module.into());
-
-    println!("{:?}", engine.eval::<rhai_plugin::Shape>("circle(50.0)"));
-
     let script = std::fs::read_to_string("test_script.rhai")?;
 
     // TODO: Rather spawn a thread to watch the file location for changes and re-run the script/drawing
@@ -29,18 +28,16 @@ fn main() -> Result<(), anyhow::Error> {
 
     // TODO: Probably need to wrap all of that into a simple server that serves a text editor together with a canvas + sliders
 
-    let context;
-    match engine.eval::<rhai_plugin::Context>(&script) {
-        Ok(c) => context = c,
-        Err(e) => {
-            println!("{:?}", e);
-            anyhow::bail!("Failed to evaluate script")
-        }
-    }
+    let solver = Solver::new();
 
-    let rc = draw_context(context);
+    let mut inputs: HashMap<String, InputValue> = HashMap::new();
+    inputs.insert("r".to_string(), 75.0.into());
+    inputs.insert("t".to_string(), 7.0.into());
+    inputs.insert("n".to_string(), 8.into());
+    let writer = solver.solve(&script, inputs.into())?;
+
     let file = std::fs::File::create("test.svg")?;
-    rc.write(file)?;
+    writer.write(file)?;
 
     Ok(())
 }
