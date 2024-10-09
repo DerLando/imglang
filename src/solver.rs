@@ -2,7 +2,7 @@ use rhai::{exported_module, Engine};
 
 use crate::{
     context_artist::{draw_context, ImageWriter},
-    input::Inputs,
+    input::{InputMap, Inputs},
     rhai_plugin,
 };
 
@@ -27,6 +27,9 @@ impl Solver {
     pub fn solve(mut self, script: &str, inputs: Inputs) -> anyhow::Result<impl ImageWriter> {
         // TODO: Get InputMap for script and check if the
         // inputs are valid and in bounds. Error out if not
+        let input_map = InputMap::try_from(script)?;
+        println!("{:?}", input_map);
+        let _ = input_map.are_valid_inputs(&inputs)?;
 
         // register resolver for inputs
         self.engine.on_var(move |name, _index, _context| {
