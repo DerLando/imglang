@@ -7,6 +7,10 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.87"
+eframe = "0.29.1"
+egui = { version = "0.29.1", features = ["persistence"] }
+egui_code_editor = "0.2.10"
+egui_extras = { version = "0.29.1", features = ["all_loaders"] }
 piet = "0.6.2"
 piet-svg = "0.6.2"
 rhai = { version = "1.19.0", features = ["internals", "sync"] }

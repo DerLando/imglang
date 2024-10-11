@@ -10,6 +10,12 @@ pub struct Solver {
     engine: rhai::Engine,
 }
 
+impl Default for Solver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Solver {
     fn init_engine() -> rhai::Engine {
         let mut engine = Engine::new();

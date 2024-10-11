@@ -1,15 +1,25 @@
 use crate::color::Color;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq)]
 pub struct InputMap {
-    inputs: HashMap<String, ExternalInput>,
+    pub(crate) inputs: HashMap<String, ExternalInput>,
 }
 
 impl InputMap {
     pub fn are_valid_inputs(&self, inputs: &Inputs) -> anyhow::Result<()> {
         // TODO: Do exhaustive checking here :)
         Ok(())
+    }
+
+    pub fn get_inputs_sorted(&self) -> Vec<(String, ExternalInput)> {
+        let mut inputs = self
+            .inputs
+            .iter()
+            .map(|(i, e)| (i.clone(), *e))
+            .collect::<Vec<_>>();
+        inputs.sort_by_key(|(i, _)| i.clone());
+        inputs
     }
 }
 
@@ -82,7 +92,7 @@ impl TryFrom<&str> for InputMap {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ExternalInput {
     Int { min: i64, max: i64 },
     Float { min: f64, max: f64 },
@@ -108,9 +118,45 @@ impl From<f64> for InputValue {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Inputs {
     pub(crate) inputs: HashMap<String, InputValue>,
+}
+
+impl Inputs {
+    pub(crate) fn init_from(map: &InputMap) -> Self {
+        let mut inner = HashMap::new();
+        for (ident, input) in &map.inputs {
+            match input {
+                ExternalInput::Int { min, max } => {
+                    inner.insert(ident.clone(), InputValue::Int(*min));
+                }
+                ExternalInput::Float { min, max } => {
+                    inner.insert(ident.clone(), InputValue::Float(*min));
+                }
+                ExternalInput::Color(_) => todo!(),
+            }
+        }
+        inner.into()
+    }
+    pub(crate) fn get_int_mut(&mut self, key: &str) -> Option<&mut i64> {
+        self.inputs
+            .get_mut(key)
+            .filter(|v| matches!(v, InputValue::Int(_)))
+            .map(|v| match v {
+                InputValue::Int(n) => n,
+                _ => unreachable!(),
+            })
+    }
+    pub(crate) fn get_float_mut(&mut self, key: &str) -> Option<&mut f64> {
+        self.inputs
+            .get_mut(key)
+            .filter(|v| matches!(v, InputValue::Float(_)))
+            .map(|v| match v {
+                InputValue::Float(f) => f,
+                _ => unreachable!(),
+            })
+    }
 }
 
 impl From<HashMap<String, InputValue>> for Inputs {
