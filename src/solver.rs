@@ -1,8 +1,8 @@
 use rhai::{exported_module, Engine};
 
 use crate::{
-    context_artist::{draw_context, ImageWriter},
-    input::{InputMap, Inputs},
+    context_artist::{draw_context_to_svg, ImageWriter},
+    input::Inputs,
     rhai_plugin,
 };
 
@@ -30,12 +30,11 @@ impl Solver {
         }
     }
 
-    pub fn solve(mut self, script: &str, inputs: Inputs) -> anyhow::Result<impl ImageWriter> {
+    pub fn solve(&mut self, script: &str, inputs: Inputs) -> anyhow::Result<impl ImageWriter> {
         // TODO: Get InputMap for script and check if the
         // inputs are valid and in bounds. Error out if not
-        let input_map = InputMap::try_from(script)?;
-        println!("{:?}", input_map);
-        let _ = input_map.are_valid_inputs(&inputs)?;
+        // let input_map = InputMap::try_from(script)?;
+        // let _ = input_map.are_valid_inputs(&inputs)?;
 
         // register resolver for inputs
         self.engine.on_var(move |name, _index, _context| {
@@ -51,7 +50,7 @@ impl Solver {
         });
 
         let context = self.engine.eval::<rhai_plugin::Context>(script)?;
-        let rc = draw_context(context);
+        let rc = draw_context_to_svg(context);
         Ok(rc)
     }
 }

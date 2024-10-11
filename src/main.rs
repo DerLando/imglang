@@ -2,13 +2,11 @@ use std::collections::HashMap;
 
 use anyhow::Error;
 use context_artist::ImageWriter;
-use egui::{Label, Slider};
+use egui::{Label, Slider, Vec2};
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
 use input::{InputMap, InputValue, Inputs};
 use rhai::{exported_module, Engine};
 use solver::Solver;
-
-use crate::context_artist::draw_context;
 
 mod ast;
 mod color;
@@ -53,6 +51,7 @@ impl MyEguiApp {
 
 impl eframe::App for MyEguiApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
+        egui_extras::install_image_loaders(ctx);
         egui::CentralPanel::default().show(ctx, |ui| {
             CodeEditor::default()
                 .id_source("code editor")
@@ -63,38 +62,55 @@ impl eframe::App for MyEguiApp {
                 .with_numlines(true)
                 .show(ui, &mut self.code);
 
-            egui::SidePanel::right("canvas")
-                .show_separator_line(true)
-                .show(ctx, |ui| {
-                    if let Ok(input_map) = InputMap::try_from(self.code.as_str()) {
-                        if input_map != self.input_map {
-                            self.inputs = Inputs::init_from(&input_map);
-                            self.input_map = input_map;
-                        }
+            match self.solver.solve(&self.code, self.inputs.clone()) {
+                Ok(writer) => {
+                    let mut buffer: Vec<u8> = Vec::new();
+                    if let Ok(_) = writer.write(&mut buffer) {
+                        let image = egui::Image::from_bytes(
+                            format!("bytes://{}.svg", self.inputs.get_uid()),
+                            buffer,
+                        )
+                        .max_width(400.0)
+                        .max_height(400.0)
+                        .maintain_aspect_ratio(true)
+                        .fit_to_exact_size(Vec2::new(400.0, 300.0));
+                        ui.add(image);
                     }
-                    for (ident, input) in self.input_map.get_inputs_sorted() {
-                        ui.add(Label::new(&ident));
-                        match input {
-                            input::ExternalInput::Int { min, max } => {
-                                ui.add(Slider::new(
-                                    self.inputs.get_int_mut(&ident).unwrap(),
-                                    min..=max,
-                                ));
-                            }
-                            input::ExternalInput::Float { min, max } => {
-                                ui.add(
-                                    Slider::new(
-                                        self.inputs.get_float_mut(&ident).unwrap(),
-                                        min..=max,
-                                    )
-                                    .fixed_decimals(2),
-                                );
-                            }
-                            input::ExternalInput::Color(_) => todo!(),
-                        }
-                    }
-                });
+                }
+                Err(e) => {
+                    ui.add(Label::new(format!("{:?}", e)));
+                }
+            }
         });
+
+        egui::SidePanel::right("canvas")
+            .show_separator_line(true)
+            .show(ctx, |ui| {
+                if let Ok(input_map) = InputMap::try_from(self.code.as_str()) {
+                    if input_map != self.input_map {
+                        self.inputs = Inputs::init_from(&input_map);
+                        self.input_map = input_map;
+                    }
+                }
+                for (ident, input) in self.input_map.get_inputs_sorted() {
+                    ui.add(Label::new(&ident));
+                    match input {
+                        input::ExternalInput::Int { min, max } => {
+                            ui.add(Slider::new(
+                                self.inputs.get_int_mut(&ident).unwrap(),
+                                min..=max,
+                            ));
+                        }
+                        input::ExternalInput::Float { min, max } => {
+                            ui.add(
+                                Slider::new(self.inputs.get_float_mut(&ident).unwrap(), min..=max)
+                                    .fixed_decimals(2),
+                            );
+                        }
+                        input::ExternalInput::Color(_) => todo!(),
+                    }
+                }
+            });
     }
 }
 

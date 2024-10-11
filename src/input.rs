@@ -118,7 +118,7 @@ impl From<f64> for InputValue {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Inputs {
     pub(crate) inputs: HashMap<String, InputValue>,
 }
@@ -156,6 +156,16 @@ impl Inputs {
                 InputValue::Float(f) => f,
                 _ => unreachable!(),
             })
+    }
+    pub(crate) fn get_uid(&self) -> String {
+        let mut keys = self.inputs.keys().collect::<Vec<_>>();
+        keys.sort();
+        let mut buffer = String::new();
+        for key in keys {
+            buffer.push_str(&format!("{}:{:?}\n", key, self.inputs.get(key).unwrap()));
+        }
+
+        buffer
     }
 }
 
