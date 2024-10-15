@@ -38,7 +38,7 @@ impl Solver {
 
         // register resolver for inputs
         self.engine.on_var(move |name, _index, _context| {
-            if let Some(value) = inputs.inputs.get(name) {
+            if let Some(value) = inputs.get(name) {
                 match value {
                     crate::input::InputValue::Int(v) => Ok(Some(v.clone().into())),
                     crate::input::InputValue::Float(v) => Ok(Some(v.clone().into())),

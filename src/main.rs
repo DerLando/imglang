@@ -71,9 +71,11 @@ impl eframe::App for MyEguiApp {
                             buffer,
                         )
                         .max_width(400.0)
-                        .max_height(400.0)
-                        .maintain_aspect_ratio(true)
-                        .fit_to_exact_size(Vec2::new(400.0, 300.0));
+                        .max_height(300.0)
+                        .shrink_to_fit()
+                        // .maintain_aspect_ratio(true)
+                        // .fit_to_exact_size(Vec2::new(400.0, 300.0))
+                        ;
                         ui.add(image);
                     }
                 }

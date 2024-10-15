@@ -1,25 +1,22 @@
 use crate::color::Color;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct InputMap {
-    pub(crate) inputs: HashMap<String, ExternalInput>,
+    inputs: BTreeMap<String, ExternalInput>,
 }
 
 impl InputMap {
-    pub fn are_valid_inputs(&self, inputs: &Inputs) -> anyhow::Result<()> {
+    pub fn are_valid_inputs(&self, _inputs: &Inputs) -> anyhow::Result<()> {
         // TODO: Do exhaustive checking here :)
         Ok(())
     }
 
     pub fn get_inputs_sorted(&self) -> Vec<(String, ExternalInput)> {
-        let mut inputs = self
-            .inputs
+        self.inputs
             .iter()
             .map(|(i, e)| (i.clone(), *e))
-            .collect::<Vec<_>>();
-        inputs.sort_by_key(|(i, _)| i.clone());
-        inputs
+            .collect::<Vec<_>>()
     }
 }
 
@@ -69,7 +66,7 @@ fn input_from_arg_exprs(args: [&rhai::Expr; 2]) -> ExternalInput {
 
 impl From<rhai::AST> for InputMap {
     fn from(value: rhai::AST) -> Self {
-        let mut inputs = HashMap::new();
+        let mut inputs = BTreeMap::new();
         for (ident, input) in value
             .statements()
             .iter()
@@ -120,12 +117,12 @@ impl From<f64> for InputValue {
 
 #[derive(Debug, Default, Clone)]
 pub struct Inputs {
-    pub(crate) inputs: HashMap<String, InputValue>,
+    inputs: BTreeMap<String, InputValue>,
 }
 
 impl Inputs {
     pub(crate) fn init_from(map: &InputMap) -> Self {
-        let mut inner = HashMap::new();
+        let mut inner = BTreeMap::new();
         for (ident, input) in &map.inputs {
             match input {
                 ExternalInput::Int { min, max } => {
@@ -137,7 +134,10 @@ impl Inputs {
                 ExternalInput::Color(_) => todo!(),
             }
         }
-        inner.into()
+        Self { inputs: inner }
+    }
+    pub(crate) fn get(&self, key: &str) -> Option<&InputValue> {
+        self.inputs.get(key)
     }
     pub(crate) fn get_int_mut(&mut self, key: &str) -> Option<&mut i64> {
         self.inputs
@@ -166,11 +166,5 @@ impl Inputs {
         }
 
         buffer
-    }
-}
-
-impl From<HashMap<String, InputValue>> for Inputs {
-    fn from(value: HashMap<String, InputValue>) -> Self {
-        Self { inputs: value }
     }
 }

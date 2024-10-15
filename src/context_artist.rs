@@ -29,7 +29,11 @@ pub(crate) fn draw_context_to_svg(context: rhai_plugin::Context) -> SvgImageWrit
     let mut canvas = piet_svg::RenderContext::new(kurbo::Size { width, height });
 
     canvas.clear(None, piet::Color::WHITE);
-    canvas.clip(piet::kurbo::Rect::new(0.0, 0.0, width / 4.0, height / 4.0));
+    canvas.fill(
+        piet::kurbo::Rect::new(0.0, 0.0, width, height),
+        &piet::Color::WHITE,
+    );
+    // canvas.clip(piet::kurbo::Rect::new(0.0, 0.0, width / 4.0, height / 4.0));
     for (shape, stroke) in context.shapes.into_iter() {
         let shape = into_piet(shape);
         canvas.stroke(
@@ -62,16 +66,32 @@ pub(crate) fn draw_context_to_svg(context: rhai_plugin::Context) -> SvgImageWrit
 // }
 
 pub trait ImageWriter {
-    fn write(&self, writer: impl std::io::Write) -> std::io::Result<()>;
+    fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()>;
 }
 
 pub(crate) struct SvgImageWriter {
     rc: piet_svg::RenderContext,
 }
 
+impl SvgImageWriter {
+    const CLIPPING_HEADER: &str = r#"
+<svg xmlns="http://www.w3.org/2000/svg" clip-path="url(#cut-off-bottom)">
+  <defs>
+    <clipPath id="cut-off-bottom">
+      <rect x="0" y="0" width="400" height="300" />
+    </clipPath>
+  </defs>
+        "#;
+
+    const CLIPPING_FOOTER: &str = "</svg>";
+}
+
 impl ImageWriter for SvgImageWriter {
-    fn write(&self, writer: impl std::io::Write) -> std::io::Result<()> {
-        self.rc.write(writer)
+    fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
+        writer.write(&Self::CLIPPING_HEADER.as_bytes())?;
+        self.rc.write(&mut *writer)?; // reborrow to avoid moving into write
+        writer.write(&Self::CLIPPING_FOOTER.as_bytes())?;
+        Ok(())
     }
 }
 
