@@ -28,13 +28,15 @@ pub(crate) fn draw_context_to_svg(context: rhai_plugin::Context) -> SvgImageWrit
     let height = context.canvas_height as f64;
     let mut canvas = piet_svg::RenderContext::new(kurbo::Size { width, height });
 
-    canvas.clear(None, piet::Color::WHITE);
+    let pre = crate::rhai_plugin::Transform::get_pre_transform(width, height);
+
     canvas.fill(
         piet::kurbo::Rect::new(0.0, 0.0, width, height),
         &piet::Color::WHITE,
     );
     // canvas.clip(piet::kurbo::Rect::new(0.0, 0.0, width / 4.0, height / 4.0));
-    for (shape, stroke) in context.shapes.into_iter() {
+    for (mut shape, stroke) in context.shapes.into_iter() {
+        shape.pre_transform(pre);
         let shape = into_piet(shape);
         canvas.stroke(
             shape,
