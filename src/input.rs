@@ -1,5 +1,8 @@
 use crate::color::Color;
-use std::collections::{BTreeMap, HashMap};
+use std::{
+    collections::{BTreeMap, HashMap},
+    hash::Hash,
+};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct InputMap {
@@ -103,6 +106,12 @@ pub enum InputValue {
     Color(Color),
 }
 
+impl Hash for InputValue {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write(&format!("{:?}", self).into_bytes())
+    }
+}
+
 impl From<i64> for InputValue {
     fn from(value: i64) -> Self {
         Self::Int(value)
@@ -157,14 +166,36 @@ impl Inputs {
                 _ => unreachable!(),
             })
     }
-    pub(crate) fn get_uid(&self) -> String {
-        let mut keys = self.inputs.keys().collect::<Vec<_>>();
-        keys.sort();
-        let mut buffer = String::new();
-        for key in keys {
-            buffer.push_str(&format!("{}:{:?}\n", key, self.inputs.get(key).unwrap()));
-        }
+}
 
-        buffer
+impl Hash for Inputs {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        for value in self.inputs.values() {
+            value.hash(state);
+        }
+    }
+}
+
+pub(crate) struct InputsHasher<'a> {
+    code: &'a str,
+    inputs: &'a Inputs,
+}
+
+impl<'a> InputsHasher<'a> {
+    pub fn make_hash<H: std::hash::Hasher>(
+        code: &'a str,
+        inputs: &'a Inputs,
+        state: &mut H,
+    ) -> u64 {
+        let hasher = Self { code, inputs };
+        hasher.hash(state);
+        state.finish()
+    }
+}
+
+impl<'a> Hash for InputsHasher<'a> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.code.hash(state);
+        self.inputs.hash(state);
     }
 }

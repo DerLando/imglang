@@ -1,10 +1,14 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{BuildHasher, BuildHasherDefault, Hasher},
+};
 
 use anyhow::Error;
 use context_artist::ImageWriter;
-use egui::{Label, Slider, Vec2};
+use egui::{ahash::RandomState, Label, Slider, Vec2};
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
-use input::{InputMap, InputValue, Inputs};
+use input::{InputMap, InputValue, Inputs, InputsHasher};
+use piet::RoundFrom;
 use rhai::{exported_module, Engine};
 use solver::Solver;
 
@@ -66,8 +70,14 @@ impl eframe::App for MyEguiApp {
                 Ok(writer) => {
                     let mut buffer: Vec<u8> = Vec::new();
                     if let Ok(_) = writer.write(&mut buffer) {
+                        let hasher = BuildHasherDefault::<egui::ahash::AHasher>::default();
+                        let hash = InputsHasher::make_hash(
+                            &self.code,
+                            &self.inputs,
+                            &mut hasher.build_hasher(),
+                        );
                         let image = egui::Image::from_bytes(
-                            format!("bytes://{}.svg", self.inputs.get_uid()),
+                            format!("bytes://{}.svg", hash),
                             buffer,
                         )
                         .max_width(400.0)
