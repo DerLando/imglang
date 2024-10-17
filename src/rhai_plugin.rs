@@ -17,23 +17,41 @@ pub struct Stroke {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Shape {
-    Circle {
-        geometry: Circle,
-        transform: Transform,
-    },
+pub struct Shape {
+    geometry: Geometry,
+    transform: Transform,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Geometry {
+    Circle(Circle),
 }
 
 impl Shape {
-    // TODO: Split geometry and transform out of the enum
-    // so we don't need to match here, it's awkward!
-    pub(crate) fn pre_transform(&mut self, pre: Transform) {
-        match self {
-            Shape::Circle {
-                geometry,
-                transform,
-            } => *transform = pre * *transform,
+    pub(crate) fn with_geometry(geometry: Geometry) -> Self {
+        Self {
+            geometry,
+            transform: Transform::IDENTITY,
         }
+    }
+
+    pub(crate) fn geometry(&self) -> &Geometry {
+        &self.geometry
+    }
+
+    pub(crate) fn transform(&self) -> &Transform {
+        &self.transform
+    }
+
+    pub(crate) fn new(geometry: Geometry, transform: Transform) -> Self {
+        Self {
+            geometry,
+            transform,
+        }
+    }
+
+    pub(crate) fn pre_transform(&mut self, pre: Transform) {
+        self.transform = pre * self.transform;
     }
 }
 
@@ -95,19 +113,16 @@ pub mod imgstd {
     }
 
     pub fn circle(radius: f64) -> Shape {
-        Shape::Circle {
-            geometry: Circle { radius },
-            transform: Transform::IDENTITY,
-        }
+        Shape::with_geometry(Geometry::Circle(Circle { radius }))
     }
 
     pub fn circle_at(radius: f64, x: f64, y: f64) -> Shape {
-        Shape::Circle {
-            geometry: Circle { radius },
-            transform: Transform {
+        Shape::new(
+            Geometry::Circle(Circle { radius }),
+            Transform {
                 inner: piet::kurbo::Affine::translate((x, y)),
             },
-        }
+        )
     }
 
     pub fn translation(x: f64, y: f64) -> Transform {
@@ -115,12 +130,7 @@ pub mod imgstd {
     }
 
     pub fn transform(shape: Shape, transform: Transform) -> Shape {
-        match shape {
-            Shape::Circle { geometry, .. } => Shape::Circle {
-                geometry,
-                transform,
-            },
-        }
+        Shape::new(shape.geometry, transform)
     }
 
     pub fn draw(canvas: &mut Canvas, shape: Shape, stroke: Stroke) {

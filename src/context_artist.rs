@@ -2,13 +2,10 @@ use crate::rhai_plugin::{self, Context};
 use piet::{kurbo, RenderContext};
 
 pub fn into_piet(shape: rhai_plugin::Shape) -> impl kurbo::Shape {
-    match shape {
-        rhai_plugin::Shape::Circle {
-            geometry,
-            transform,
-        } => {
-            let circle = kurbo::Circle::new((0.0, 0.0), geometry.radius);
-            transform.inner * circle
+    match shape.geometry() {
+        rhai_plugin::Geometry::Circle(circle) => {
+            let circle = kurbo::Circle::new((0.0, 0.0), circle.radius);
+            shape.transform().inner * circle
         }
     }
 }
