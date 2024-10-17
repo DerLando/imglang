@@ -70,11 +70,7 @@ fn input_from_arg_exprs(args: [&rhai::Expr; 2]) -> ExternalInput {
 impl From<rhai::AST> for InputMap {
     fn from(value: rhai::AST) -> Self {
         let mut inputs = BTreeMap::new();
-        for (ident, input) in value
-            .statements()
-            .iter()
-            .filter_map(|stmt| input_from_stmt(stmt))
-        {
+        for (ident, input) in value.statements().iter().filter_map(input_from_stmt) {
             inputs.insert(ident, input);
         }
 

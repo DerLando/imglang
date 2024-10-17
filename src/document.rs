@@ -1,15 +1,7 @@
+#[derive(Default)]
 pub(crate) struct Document {
     content: String,
     path: Option<std::path::PathBuf>,
-}
-
-impl Default for Document {
-    fn default() -> Self {
-        Self {
-            content: String::new(),
-            path: None,
-        }
-    }
 }
 
 impl Document {
@@ -23,7 +15,7 @@ impl Document {
 
     pub fn save(&mut self) -> std::io::Result<()> {
         if let Some(path) = &self.path {
-            std::fs::write(&path, &self.content)
+            std::fs::write(path, &self.content)
         } else {
             todo!("Set the path here and then write")
         }

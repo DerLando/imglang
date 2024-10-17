@@ -110,7 +110,7 @@ impl eframe::App for MyEguiApp {
                     if let Ok(_) = writer.write(&mut buffer) {
                         let hasher = BuildHasherDefault::<egui::ahash::AHasher>::default();
                         let hash = InputsHasher::make_hash(
-                            &self.document.content(),
+                            self.document.content(),
                             &self.inputs,
                             &mut hasher.build_hasher(),
                         );

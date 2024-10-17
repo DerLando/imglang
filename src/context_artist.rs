@@ -87,9 +87,9 @@ impl SvgImageWriter {
 
 impl ImageWriter for SvgImageWriter {
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        writer.write(&Self::CLIPPING_HEADER.as_bytes())?;
+        writer.write_all(Self::CLIPPING_HEADER.as_bytes())?;
         self.rc.write(&mut *writer)?; // reborrow to avoid moving into write
-        writer.write(&Self::CLIPPING_FOOTER.as_bytes())?;
+        writer.write_all(Self::CLIPPING_FOOTER.as_bytes())?;
         Ok(())
     }
 }
