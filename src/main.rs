@@ -1,10 +1,12 @@
 use std::{
     collections::HashMap,
     hash::{BuildHasher, BuildHasherDefault, Hasher},
+    rc::Rc,
 };
 
 use anyhow::Error;
 use context_artist::ImageWriter;
+use document::Document;
 use egui::{ahash::RandomState, Label, Slider, Vec2};
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
 use input::{InputMap, InputValue, Inputs, InputsHasher};
@@ -15,6 +17,7 @@ use solver::Solver;
 mod ast;
 mod color;
 mod context_artist;
+mod document;
 mod input;
 mod interpret;
 mod parse;
@@ -33,7 +36,7 @@ fn main() {
 
 #[derive(Default)]
 struct MyEguiApp {
-    code: String,
+    document: Document,
     solver: Solver,
     input_map: InputMap,
     inputs: Inputs,
@@ -47,7 +50,7 @@ impl MyEguiApp {
         // for e.g. egui::PaintCallback.
         let mut initial = Self::default();
         let script = std::fs::read_to_string("test_script.rhai").unwrap();
-        initial.code = script;
+        *initial.document.content_mut() = script;
 
         initial
     }
@@ -56,6 +59,45 @@ impl MyEguiApp {
 impl eframe::App for MyEguiApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui_extras::install_image_loaders(ctx);
+        egui::TopBottomPanel::top("menu").show(ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Open").clicked() {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("imglang file", &["rhai"])
+                            .pick_file()
+                        {
+                            if let Ok(document) = Document::open(&path) {
+                                self.document = document;
+                            } else {
+                                // Do nothing
+                            }
+                        } else {
+                            // Do nothing :)
+                        }
+                    };
+                    ui.add_enabled_ui(self.document.can_save(), |ui| {
+                        if ui.button("Save").clicked() {
+                            self.document.save();
+                        }
+                    });
+                    if ui.button("Save As").clicked() {
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter("imglang file", &["rhai"])
+                            .save_file()
+                        {
+                            self.document.set_path(&path);
+                            self.document.save();
+                        } else {
+                            // Do nothing :)
+                        }
+                    }
+                    if ui.button("Save Screenshot").clicked() {
+                        // TODO
+                    }
+                })
+            })
+        });
         egui::CentralPanel::default().show(ctx, |ui| {
             CodeEditor::default()
                 .id_source("code editor")
@@ -64,15 +106,18 @@ impl eframe::App for MyEguiApp {
                 .with_theme(ColorTheme::GRUVBOX)
                 .with_syntax(Syntax::rust())
                 .with_numlines(true)
-                .show(ui, &mut self.code);
+                .show(ui, self.document.content_mut());
 
-            match self.solver.solve(&self.code, self.inputs.clone()) {
+            match self
+                .solver
+                .solve(self.document.content(), self.inputs.clone())
+            {
                 Ok(writer) => {
                     let mut buffer: Vec<u8> = Vec::new();
                     if let Ok(_) = writer.write(&mut buffer) {
                         let hasher = BuildHasherDefault::<egui::ahash::AHasher>::default();
                         let hash = InputsHasher::make_hash(
-                            &self.code,
+                            &self.document.content(),
                             &self.inputs,
                             &mut hasher.build_hasher(),
                         );
@@ -98,7 +143,7 @@ impl eframe::App for MyEguiApp {
         egui::SidePanel::right("canvas")
             .show_separator_line(true)
             .show(ctx, |ui| {
-                if let Ok(input_map) = InputMap::try_from(self.code.as_str()) {
+                if let Ok(input_map) = InputMap::try_from(self.document.content()) {
                     if input_map != self.input_map {
                         self.inputs = Inputs::init_from(&input_map);
                         self.input_map = input_map;

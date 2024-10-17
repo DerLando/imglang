@@ -14,5 +14,6 @@ egui_extras = { version = "0.29.1", features = ["all_loaders"] }
 image = { version = "0.25.2", features = ["png"] }
 piet = "0.6.2"
 piet-svg = "0.6.2"
+rfd = "0.15.0"
 rhai = { version = "1.19.0", features = ["internals", "sync"] }
 winnow = "0.6.18"
