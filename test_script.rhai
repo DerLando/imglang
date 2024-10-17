@@ -1,21 +1,19 @@
-let r = extern(50.0, 200.0);
+let r = extern(20.0, 200.0);
+let r_min = extern(0.1, 10.0);
+let r_max = extern(20.0, 100.0);
 let t = extern(1.0, 10.0);
 let n = extern(5, 10);
 
-// let r = 50.0;
-// let t = 3.0;
-// let n = 7;
-
 let canvas = canvas_width_height(400, 300);
 let stroke = stroke(t, BLACK);
-let circle = circle(r);
+let step = 2 * pi() / n;
 
 for i in 0..n {
-	let xform = translation(i * r * 2.0, 0.0);
-	let current = transform(circle, xform);
-	canvas.draw(current, stroke);
+	let radius = LINEAR.evaluate(r_min, r_max, to_float(i) / n);
+	let pt = point_polar(r, i * step);
+	let circle = circle_at(radius, pt.x, pt.y);
+	canvas.draw(circle, stroke);
 }
-
 
 canvas
 
