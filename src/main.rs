@@ -1,27 +1,20 @@
-use std::{
-    collections::HashMap,
-    hash::{BuildHasher, BuildHasherDefault, Hasher},
-    rc::Rc,
-};
+use std::hash::{BuildHasher, BuildHasherDefault};
 
-use anyhow::Error;
 use context_artist::ImageWriter;
 use document::Document;
-use egui::{ahash::RandomState, Label, Slider, Vec2};
+use egui::{Label, Slider};
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
-use input::{InputMap, InputValue, Inputs, InputsHasher};
-use piet::RoundFrom;
-use rhai::{exported_module, Engine};
+use input::{InputMap, Inputs, InputsHasher};
 use solver::Solver;
 
 mod ast;
 mod color;
 mod context_artist;
 mod document;
+mod imgstd;
 mod input;
 mod interpret;
 mod parse;
-mod rhai_plugin;
 mod solver;
 mod stdlib;
 

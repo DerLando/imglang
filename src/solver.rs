@@ -2,8 +2,8 @@ use rhai::{exported_module, Engine};
 
 use crate::{
     context_artist::{draw_context_to_svg, ImageWriter},
+    imgstd,
     input::Inputs,
-    rhai_plugin,
 };
 
 pub struct Solver {
@@ -19,7 +19,7 @@ impl Default for Solver {
 impl Solver {
     fn init_engine() -> rhai::Engine {
         let mut engine = Engine::new();
-        let std_module = exported_module!(rhai_plugin::imgstd);
+        let std_module = exported_module!(imgstd::stdexport);
         engine.register_global_module(std_module.into());
         engine
     }
@@ -49,7 +49,7 @@ impl Solver {
             }
         });
 
-        let context = self.engine.eval::<rhai_plugin::Context>(script)?;
+        let context = self.engine.eval::<imgstd::Context>(script)?;
         let rc = draw_context_to_svg(context);
         Ok(rc)
     }

@@ -1,9 +1,9 @@
-use crate::rhai_plugin::{self, Context};
+use crate::imgstd::{self, Context};
 use piet::{kurbo, RenderContext};
 
-pub fn into_piet(shape: rhai_plugin::Shape) -> impl kurbo::Shape {
+pub fn into_piet(shape: imgstd::Shape) -> impl kurbo::Shape {
     match shape.geometry() {
-        rhai_plugin::Geometry::Circle(circle) => {
+        imgstd::Geometry::Circle(circle) => {
             let circle = kurbo::Circle::new((0.0, 0.0), circle.radius);
             shape.transform().inner * circle
         }
@@ -20,12 +20,12 @@ impl From<crate::color::Color> for piet::Color {
     }
 }
 
-pub(crate) fn draw_context_to_svg(context: rhai_plugin::Context) -> SvgImageWriter {
+pub(crate) fn draw_context_to_svg(context: imgstd::Context) -> SvgImageWriter {
     let width = context.canvas_width as f64;
     let height = context.canvas_height as f64;
     let mut canvas = piet_svg::RenderContext::new(kurbo::Size { width, height });
 
-    let pre = crate::rhai_plugin::Transform::get_pre_transform(width, height);
+    let pre = crate::imgstd::Transform::get_pre_transform(width, height);
 
     canvas.fill(
         piet::kurbo::Rect::new(0.0, 0.0, width, height),
