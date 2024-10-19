@@ -36,6 +36,7 @@ struct MyEguiApp {
     solver: Solver,
     input_map: InputMap,
     inputs: Inputs,
+    last_inputs_hash: u64,
 }
 
 impl MyEguiApp {
@@ -110,50 +111,6 @@ impl eframe::App for MyEguiApp {
                 })
             })
         });
-        egui::CentralPanel::default().show(ctx, |ui| {
-            CollapsingHeader::new("code")
-                .default_open(true)
-                .show(ui, |ui| {
-                    CodeEditor::default()
-                        .id_source("code editor")
-                        .with_rows(12)
-                        .with_fontsize(14.0)
-                        .with_theme(ColorTheme::GRUVBOX)
-                        .with_syntax(Syntax::rust())
-                        .with_numlines(true)
-                        .show(ui, self.document.content_mut());
-                });
-            match self
-                .solver
-                .solve(self.document.content(), self.inputs.clone())
-            {
-                Ok(writer) => {
-                    let mut buffer: Vec<u8> = Vec::new();
-                    if let Ok(_) = writer.write(&mut buffer) {
-                        let hasher = BuildHasherDefault::<egui::ahash::AHasher>::default();
-                        let hash = InputsHasher::make_hash(
-                            self.document.content(),
-                            &self.inputs,
-                            &mut hasher.build_hasher(),
-                        );
-                        let image = egui::Image::from_bytes(
-                            format!("bytes://{}.svg", hash),
-                            buffer,
-                        )
-                        .max_width((writer.width() * 2) as f32)
-                        .max_height((writer.height() * 2) as f32)
-                        // .shrink_to_fit()
-                        // .maintain_aspect_ratio(true)
-                        // .fit_to_exact_size(Vec2::new(400.0, 300.0))
-                        ;
-                        ui.add(image);
-                    }
-                }
-                Err(e) => {
-                    ui.add(Label::new(format!("{:?}", e)));
-                }
-            }
-        });
 
         egui::SidePanel::right("canvas")
             .show_separator_line(true)
@@ -183,6 +140,55 @@ impl eframe::App for MyEguiApp {
                     }
                 }
             });
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            CollapsingHeader::new("code")
+                .default_open(true)
+                .show(ui, |ui| {
+                    CodeEditor::default()
+                        .id_source("code editor")
+                        .with_rows(12)
+                        .with_fontsize(14.0)
+                        .with_theme(ColorTheme::GRUVBOX)
+                        .with_syntax(Syntax::rust())
+                        .with_numlines(true)
+                        .show(ui, self.document.content_mut());
+                });
+            let hasher = BuildHasherDefault::<egui::ahash::AHasher>::default();
+            let hash = InputsHasher::make_hash(
+                self.document.content(),
+                &self.inputs,
+                &mut hasher.build_hasher(),
+            );
+            if self.last_inputs_hash == hash {
+                self.solver.advance_time();
+                // TODO: Figure out if repaint only the image is possib
+                ctx.request_repaint();
+            } else {
+                self.solver.reset_time();
+                self.last_inputs_hash = hash;
+            }
+            match self
+                .solver
+                .solve(self.document.content(), self.inputs.clone())
+            {
+                Ok(writer) => {
+                    let mut buffer: Vec<u8> = Vec::new();
+                    if let Ok(_) = writer.write(&mut buffer) {
+                        let image = egui::Image::from_bytes(
+                            format!("bytes://{}_{}.svg", hash, self.solver.get_time()),
+                            buffer,
+                        )
+                        .max_width((writer.width() * 2) as f32)
+                        .max_height((writer.height() * 2) as f32);
+                        ui.add(image);
+                    }
+                }
+                Err(e) => {
+                    ui.add(Label::new(format!("{:?}", e)));
+                }
+            }
+        });
     }
 }
 

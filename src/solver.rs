@@ -1,4 +1,4 @@
-use rhai::{exported_module, Engine};
+use rhai::{exported_module, Engine, Scope};
 
 use crate::{
     context_artist::{draw_context_to_svg, ImageWriter},
@@ -8,6 +8,7 @@ use crate::{
 
 pub struct Solver {
     engine: rhai::Engine,
+    frame_count: u32,
 }
 
 impl Default for Solver {
@@ -27,6 +28,7 @@ impl Solver {
     pub fn new() -> Self {
         Self {
             engine: Self::init_engine(),
+            frame_count: 0,
         }
     }
 
@@ -49,8 +51,24 @@ impl Solver {
             }
         });
 
-        let context = self.engine.eval::<imgstd::Context>(script)?;
+        let mut scope = Scope::new();
+        scope.push_constant("TIME", self.frame_count as i64);
+        let context = self
+            .engine
+            .eval_with_scope::<imgstd::Context>(&mut scope, script)?;
         let rc = draw_context_to_svg(context);
         Ok(rc)
+    }
+
+    pub fn advance_time(&mut self) {
+        self.frame_count = self.frame_count.wrapping_add(1);
+    }
+
+    pub fn reset_time(&mut self) {
+        self.frame_count = 0;
+    }
+
+    pub fn get_time(&self) -> u32 {
+        self.frame_count
     }
 }
