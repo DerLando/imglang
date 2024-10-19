@@ -66,6 +66,8 @@ pub(crate) fn draw_context_to_svg(context: imgstd::Context) -> SvgImageWriter {
 
 pub trait ImageWriter {
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()>;
+    fn width(&self) -> u64;
+    fn height(&self) -> u64;
 }
 
 pub(crate) struct SvgImageWriter {
@@ -77,20 +79,43 @@ impl SvgImageWriter {
 <svg xmlns="http://www.w3.org/2000/svg" clip-path="url(#cut-off-bottom)">
   <defs>
     <clipPath id="cut-off-bottom">
-      <rect x="0" y="0" width="400" height="300" />
+      <rect x="0" y="0" width="{}" height="{}" />
     </clipPath>
   </defs>
         "#;
 
     const CLIPPING_FOOTER: &str = "</svg>";
+
+    fn get_clipping_header(&self) -> String {
+        format!(
+            r#"
+<svg xmlns="http://www.w3.org/2000/svg" clip-path="url(#cut-off-bottom)">
+  <defs>
+    <clipPath id="cut-off-bottom">
+      <rect x="0" y="0" width="{}" height="{}" />
+    </clipPath>
+  </defs>
+        "#,
+            self.width(),
+            self.height()
+        )
+    }
 }
 
 impl ImageWriter for SvgImageWriter {
     fn write(&self, writer: &mut impl std::io::Write) -> std::io::Result<()> {
-        writer.write_all(Self::CLIPPING_HEADER.as_bytes())?;
+        writer.write_all(self.get_clipping_header().as_bytes())?;
         self.rc.write(&mut *writer)?; // reborrow to avoid moving into write
         writer.write_all(Self::CLIPPING_FOOTER.as_bytes())?;
         Ok(())
+    }
+
+    fn width(&self) -> u64 {
+        self.rc.size().width as u64
+    }
+
+    fn height(&self) -> u64 {
+        self.rc.size().height as u64
     }
 }
 

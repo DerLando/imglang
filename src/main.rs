@@ -2,11 +2,12 @@ use std::hash::{BuildHasher, BuildHasherDefault};
 
 use context_artist::ImageWriter;
 use document::Document;
-use egui::{Label, Slider};
+use egui::{CollapsingHeader, Label, Slider};
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
 use input::{InputMap, Inputs, InputsHasher};
 use solver::Solver;
 
+mod app;
 mod ast;
 mod color;
 mod context_artist;
@@ -27,6 +28,8 @@ fn main() {
     );
 }
 
+/// TODO: I need to abstract here to be able to handle view-specific
+/// concerns, like f.e. hiding the side panel, maximizing a window, etc
 #[derive(Default)]
 struct MyEguiApp {
     document: Document,
@@ -86,21 +89,40 @@ impl eframe::App for MyEguiApp {
                         }
                     }
                     if ui.button("Save Screenshot").clicked() {
-                        // TODO
+                        if let Ok(writer) = self
+                            .solver
+                            .solve(self.document.content(), self.inputs.clone())
+                        {
+                            if let Some(path) = rfd::FileDialog::new()
+                                .add_filter("svg file", &["svg"])
+                                .save_file()
+                            {
+                                if let Ok(mut file) = std::fs::File::create(path) {
+                                    writer.write(&mut file);
+                                }
+                            } else {
+                                // Do nothing :)
+                            }
+                        } else {
+                            // Do nothing :)
+                        }
                     }
                 })
             })
         });
         egui::CentralPanel::default().show(ctx, |ui| {
-            CodeEditor::default()
-                .id_source("code editor")
-                .with_rows(12)
-                .with_fontsize(14.0)
-                .with_theme(ColorTheme::GRUVBOX)
-                .with_syntax(Syntax::rust())
-                .with_numlines(true)
-                .show(ui, self.document.content_mut());
-
+            CollapsingHeader::new("code")
+                .default_open(true)
+                .show(ui, |ui| {
+                    CodeEditor::default()
+                        .id_source("code editor")
+                        .with_rows(12)
+                        .with_fontsize(14.0)
+                        .with_theme(ColorTheme::GRUVBOX)
+                        .with_syntax(Syntax::rust())
+                        .with_numlines(true)
+                        .show(ui, self.document.content_mut());
+                });
             match self
                 .solver
                 .solve(self.document.content(), self.inputs.clone())
@@ -118,9 +140,9 @@ impl eframe::App for MyEguiApp {
                             format!("bytes://{}.svg", hash),
                             buffer,
                         )
-                        .max_width(400.0)
-                        .max_height(300.0)
-                        .shrink_to_fit()
+                        .max_width((writer.width() * 2) as f32)
+                        .max_height((writer.height() * 2) as f32)
+                        // .shrink_to_fit()
                         // .maintain_aspect_ratio(true)
                         // .fit_to_exact_size(Vec2::new(400.0, 300.0))
                         ;
