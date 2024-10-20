@@ -23,9 +23,9 @@ pub struct Context {
 pub mod stdexport {
     use std::ops::Deref;
 
-    use geometry::{Circle, Geometry};
+    use geometry::{Circle, Geometry, Line};
     use gradient::StepFunction;
-    use point_polar::PointPolar;
+    use point_polar::{PointCarthesian, PointPolar};
     use shape::Shape;
     use style::Stroke;
     use transform::Transform;
@@ -99,6 +99,45 @@ pub mod stdexport {
     #[rhai_fn(get = "y")]
     pub fn get_polar_y(point: PointPolar) -> f64 {
         point.y()
+    }
+
+    pub fn point(x: f64, y: f64) -> PointCarthesian {
+        PointCarthesian::new(x, y)
+    }
+
+    #[rhai_fn(get = "x")]
+    pub fn get_carthesian_x(point: PointCarthesian) -> f64 {
+        point.x()
+    }
+
+    #[rhai_fn(get = "y")]
+    pub fn get_carthesian_y(point: PointCarthesian) -> f64 {
+        point.y()
+    }
+
+    #[rhai_fn(name = "line")]
+    pub fn line_from_points0(start: PointCarthesian, end: PointCarthesian) -> Shape {
+        Shape::with_geometry(Geometry::Line((start, end).into()))
+    }
+
+    #[rhai_fn(name = "line")]
+    pub fn line_from_points1(start: PointCarthesian, end: PointPolar) -> Shape {
+        Shape::with_geometry(Geometry::Line((start, end).into()))
+    }
+
+    #[rhai_fn(name = "line")]
+    pub fn line_from_points2(start: PointPolar, end: PointCarthesian) -> Shape {
+        Shape::with_geometry(Geometry::Line((start, end).into()))
+    }
+
+    #[rhai_fn(name = "line")]
+    pub fn line_from_points3(start: PointPolar, end: PointPolar) -> Shape {
+        Shape::with_geometry(Geometry::Line((start, end).into()))
+    }
+
+    #[rhai_fn(name = "line")]
+    pub fn line_from_coordinates(x0: f64, y0: f64, x1: f64, y1: f64) -> Shape {
+        Shape::with_geometry(Geometry::Line(Line::new(x0, y0, x1, y1)))
     }
 
     pub fn pi() -> f64 {

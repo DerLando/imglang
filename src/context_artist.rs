@@ -1,11 +1,20 @@
 use crate::imgstd::{self, Context};
-use piet::{kurbo, RenderContext};
+use piet::{
+    kurbo::{self, Shape},
+    RenderContext,
+};
+
+const PATH_TOLERANCE: f64 = 0.1;
 
 pub fn into_piet(shape: imgstd::Shape) -> impl kurbo::Shape {
     match shape.geometry() {
         imgstd::Geometry::Circle(circle) => {
             let circle = kurbo::Circle::new((0.0, 0.0), circle.radius);
-            shape.transform().inner * circle
+            (shape.transform().inner * circle).into_path(PATH_TOLERANCE)
+        }
+        imgstd::Geometry::Line(line) => {
+            let piet_line = kurbo::Line::new((line.x0, line.y0), (line.x1, line.y1));
+            (shape.transform().inner * piet_line).into_path(PATH_TOLERANCE)
         }
     }
 }
